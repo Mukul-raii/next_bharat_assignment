@@ -114,27 +114,68 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
                   </div>
                   {message.citations && message.citations.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200 text-sm">
-                      <strong className="block mb-2 font-medium text-gray-500">
-                        📎 Sources:
+                      <strong className="block mb-2 font-medium text-gray-600 text-xs uppercase tracking-wide">
+                        📎 References
                       </strong>
-                      {message.citations.map((citation: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="bg-gray-100 p-2.5 rounded-sm mt-1.5 text-gray-500 border-l-2 border-gray-300"
-                        >
-                          <div className="font-medium text-gray-800 text-xs mb-1">
-                            {citation.source || `Source ${idx + 1}`}
-                          </div>
-                          <div className="text-gray-500 text-xs leading-normal mb-1">
-                            {citation.text}
-                          </div>
-                          {citation.score && (
-                            <div className="text-[0.7rem] text-gray-400">
-                              Relevance: {(citation.score * 100).toFixed(0)}%
+                      {message.citations.map((citation, idx: number) => {
+                        // Format the reference location
+                        const location = [];
+                        if (citation.page_number) {
+                          location.push(`Page ${citation.page_number}`);
+                        }
+                        if (citation.section) {
+                          location.push(citation.section);
+                        }
+                        if (citation.chunk_id) {
+                          location.push(`Chunk ${citation.chunk_id}`);
+                        }
+                        const locationStr =
+                          location.length > 0
+                            ? location.join(", ")
+                            : `Reference ${idx + 1}`;
+
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-gray-50 p-3 rounded mb-2 border-l-3 border-blue-400 hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="font-semibold text-gray-800 text-xs">
+                                📄 {locationStr}
+                              </div>
+                              {citation.score !== undefined && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[0.65rem] text-gray-500">
+                                    Similarity:
+                                  </span>
+                                  <span
+                                    className={`text-[0.65rem] font-semibold ${
+                                      citation.score > 0.8
+                                        ? "text-green-600"
+                                        : citation.score > 0.6
+                                        ? "text-blue-600"
+                                        : "text-gray-600"
+                                    }`}
+                                  >
+                                    {(citation.score * 100).toFixed(0)}%
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            <div className="text-gray-600 text-xs leading-relaxed italic border-l-2 border-gray-300 pl-2">
+                              "
+                              {citation.text.length > 200
+                                ? citation.text.substring(0, 200) + "..."
+                                : citation.text}
+                              "
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="mt-2 text-[0.65rem] text-gray-400 italic">
+                        💡 Similarity score indicates how closely the source
+                        matches your question (higher is better)
+                      </div>
                     </div>
                   )}
                   <div

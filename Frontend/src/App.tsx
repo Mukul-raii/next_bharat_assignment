@@ -2,7 +2,6 @@ import React from "react";
 import FileUpload from "./components/FileUpload";
 import DocumentList from "./components/DocumentList";
 import ChatInterface from "./components/ChatInterface";
-import SessionInfo from "./components/SessionInfo";
 import { useDocuments } from "./hooks/useDocuments";
 import type { Document } from "./types";
 
@@ -21,16 +20,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white p-5 border-b border-gray-200 text-center flex justify-center items-center relative">
-        <div className="text-center">
-          <h1 className="m-0 text-gray-900 text-3xl font-medium tracking-tight">
-            📄 Document Q&A Agent
-          </h1>
-          <p className="mt-2 text-gray-500 text-sm font-normal">
-            Upload documents and ask questions
-          </p>
+      <header className="bg-white border-b border-gray-200 ">
+        <div className="max-w-7xl  px-2 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 uppercase tracking-wide">
+              Document Q&A
+            </h1>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Upload documents and ask questions
+            </p>
+          </div>
         </div>
-        <SessionInfo />
       </header>
 
       <div className="flex flex-col lg:flex-row mx-auto gap-[1px] p-0 h-auto lg:h-[calc(100vh-100px)] bg-gray-200">
@@ -49,13 +49,14 @@ function App() {
           {selectedDocument ? (
             <ChatInterface document={selectedDocument} />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-10 text-gray-500">
-              <h2 className="text-2xl mb-2.5 text-gray-800 font-normal">
-                👈 Select a document to start asking questions
+            <div className="flex flex-col items-center justify-center h-full text-center p-10 text-gray-400">
+              <div className="text-4xl mb-3 text-gray-300">←</div>
+              <h2 className="text-lg font-medium text-gray-600 mb-1">
+                Select a document
               </h2>
               <p className="text-sm text-gray-400">
-                Upload a document first, then select it from the list to chat
-                with it.
+                Upload a document first, then select it from the list to start
+                asking questions
               </p>
             </div>
           )}

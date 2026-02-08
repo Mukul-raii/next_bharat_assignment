@@ -26,14 +26,23 @@ const DocumentList: React.FC<DocumentListProps> = ({
     );
   };
 
-  const getStatusEmoji = (status: string, processed: boolean) => {
-    if (processed) return "✅";
-    if (status === "uploaded") return "📤";
-    if (status === "processing") return "⏳";
-    return "📄";
+  const getStatusBadge = (status: string, processed: boolean) => {
+    if (processed) {
+      return (
+        <span className="text-xs text-green-700 font-medium">● Ready</span>
+      );
+    }
+    if (status === "processing") {
+      return (
+        <span className="text-xs text-blue-600 font-medium">● Processing</span>
+      );
+    }
+    return (
+      <span className="text-xs text-gray-500 font-medium">● Uploaded</span>
+    );
   };
 
-  const truncateFilename = (filename: string, maxLength: number = 35) => {
+  const truncateFilename = (filename: string, maxLength: number = 40) => {
     if (filename.length <= maxLength) return filename;
 
     const extension = filename.substring(filename.lastIndexOf("."));
@@ -48,87 +57,76 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white p-6 flex-1 overflow-hidden flex flex-col">
-        <h2 className="mt-0 text-gray-900 text-xl mb-5 font-medium">
-          📚 Your Documents
-        </h2>
-        <div className="text-center text-gray-400 py-[60px] px-5">
-          <p className="text-[0.95rem] mb-2 text-gray-600">
-            Loading documents...
-          </p>
+      <div className="bg-white flex-1 overflow-hidden flex flex-col border-l border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+            Documents
+          </h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-gray-500">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 flex-1 overflow-hidden flex flex-col">
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="m-0 text-gray-900 text-xl font-medium">
-          📚 Your Documents
+    <div className="bg-white flex-1 overflow-hidden flex flex-col border-l border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+          Documents
         </h2>
         {onRefresh && (
           <button
-            className="bg-transparent border border-gray-300 rounded p-1.5 px-2.5 text-lg cursor-pointer transition-all duration-200 flex items-center justify-center text-gray-600 hover:border-gray-800 hover:bg-gray-50 hover:rotate-90 active:rotate-180 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="text-gray-400 hover:text-gray-600 transition-colors text-sm"
             onClick={onRefresh}
             disabled={loading}
-            title="Refresh document list"
+            title="Refresh"
           >
-            🔄
+            ↻
           </button>
         )}
       </div>
 
       {documents.length === 0 ? (
-        <div className="text-center text-gray-400 py-[60px] px-5">
-          <p className="text-[0.95rem] mb-2 text-gray-600">No documents yet</p>
-          <small className="text-gray-400 text-sm">
-            Upload your first document to get started
-          </small>
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-1">No documents</p>
+            <p className="text-xs text-gray-400">Upload a document to begin</p>
+          </div>
         </div>
       ) : (
-        <div className="overflow-y-auto flex flex-col gap-[1px] bg-gray-200 -m-2 p-2">
+        <div className="flex-1 overflow-y-auto">
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className={`p-4 border-none rounded-none cursor-pointer transition-all duration-150 flex justify-between items-center bg-white border-l-2 border-transparent hover:bg-gray-50 hover:border-gray-800 ${
+              className={`px-6 py-4 cursor-pointer transition-colors border-b border-gray-100 hover:bg-gray-50 ${
                 selectedDocumentId === doc.id
-                  ? "bg-gray-100 border-gray-900"
-                  : ""
+                  ? "bg-blue-50 border-l-2 border-l-blue-600"
+                  : "border-l-2 border-l-transparent"
               }`}
               onClick={() => onSelectDocument(doc)}
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <span className="text-xl flex-shrink-0 opacity-60">
-                  {getStatusEmoji(doc.status, doc.processed)}
-                </span>
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div
-                    className="font-normal text-gray-900 text-sm break-words leading-snug max-w-full"
+                    className="text-sm font-medium text-gray-900 truncate mb-1"
                     title={doc.filename}
                   >
                     {truncateFilename(doc.filename)}
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {DocumentController.formatFileSize(doc.file_size)} •{" "}
-                    {formatDate(doc.upload_date)}
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span>
+                      {DocumentController.formatFileSize(doc.file_size)}
+                    </span>
+                    <span>•</span>
+                    <span>{formatDate(doc.upload_date)}</span>
                   </div>
                 </div>
+                <div className="shrink-0">
+                  {getStatusBadge(doc.status, doc.processed)}
+                </div>
               </div>
-              {doc.processed ? (
-                <span className="px-2.5 py-1 rounded-sm text-[0.7rem] font-medium flex-shrink-0 tracking-wide uppercase bg-gray-200 text-gray-800">
-                  Ready
-                </span>
-              ) : (
-                <span className="px-2.5 py-1 rounded-sm text-[0.7rem] font-medium flex-shrink-0 tracking-wide uppercase bg-gray-100 text-gray-600 flex items-center gap-1">
-                  Processing...
-                  <span className="inline-flex gap-0.5">
-                    <span className="animate-dot-pulse">.</span>
-                    <span className="animate-dot-pulse delay-75">.</span>
-                    <span className="animate-dot-pulse delay-150">.</span>
-                  </span>
-                </span>
-              )}
             </div>
           ))}
         </div>

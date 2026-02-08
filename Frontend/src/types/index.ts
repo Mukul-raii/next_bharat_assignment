@@ -13,12 +13,21 @@ export interface Document {
   error_message?: string;
 }
 
+export interface Citation {
+  text: string;
+  page_number?: number;
+  section?: string;
+  chunk_id?: string;
+  score?: number;
+  document_name?: string;
+}
+
 export interface Message {
   id: string;
-  type: 'user' | 'bot';
+  type: "user" | "bot";
   text: string;
   timestamp: Date;
-  citations?: string[];
+  citations?: Citation[];
 }
 
 export interface UploadResponse {
@@ -36,9 +45,6 @@ export interface DocumentListResponse {
 
 export interface AskResponse {
   answer: string;
-  citations?: string[];
-  sources?: Array<{
-    text: string;
-    page_number?: number;
-  }>;
+  citations?: Citation[];
+  sources?: Citation[];
 }
