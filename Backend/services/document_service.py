@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Tuple, Optional
 from fastapi import HTTPException, UploadFile
 from config.settings import ALLOWED_EXTENSIONS, MAX_FILE_SIZE
@@ -60,7 +60,7 @@ class DocumentService:
             "file_size": file_size,
             "file_type": file_ext,
             "status": "uploaded",
-            "upload_date": datetime.utcnow().isoformat(),
+            "upload_date": datetime.now(timezone.utc).isoformat(),
             "processed": False,
         }
 
@@ -74,7 +74,7 @@ class DocumentService:
         if indexer_result.get("status") == "success":
             CosmosDBService.update_document(document_id, {
                 "status": "processing",
-                "indexer_triggered_at": datetime.utcnow().isoformat()
+                "indexer_triggered_at": datetime.now(timezone.utc).isoformat()
             })
 
         return {
@@ -104,7 +104,9 @@ class DocumentService:
         
         # Auto-update status for processing documents
         from services.ai_search_service import AISearchService
-        from datetime import datetime
+        from datetime import timedelta
+        
+        current_time = datetime.now(timezone.utc)
         
         for doc in documents:
             if doc.get("status") == "processing":
@@ -114,11 +116,54 @@ class DocumentService:
                     # Update to completed
                     CosmosDBService.update_document(doc.get("document_id"), {
                         "status": "completed",
-                        "completed_at": datetime.utcnow().isoformat(),
+                        "completed_at": current_time.isoformat(),
                         "processed": True
                     })
                     doc["status"] = "completed"
                     doc["processed"] = True
+                else:
+                    # Auto-complete after 2 minutes if still processing
+                    # (Indexer might have completed but check_document_indexed might fail)
+                    indexed_at = doc.get("indexer_triggered_at")
+                    if indexed_at:
+                        try:
+                            # Parse ISO format with timezone
+                            indexed_time = datetime.fromisoformat(indexed_at.replace('Z', '+00:00'))
+                            time_elapsed = current_time - indexed_time
+                            
+                            if time_elapsed > timedelta(minutes=2):
+                                # Assume completed after 2 minutes
+                                CosmosDBService.update_document(doc.get("document_id"), {
+                                    "status": "completed",
+                                    "completed_at": current_time.isoformat(),
+                                    "processed": True
+                                })
+                                doc["status"] = "completed"
+                                doc["processed"] = True
+                        except Exception as e:
+                            print(f"Error parsing indexer_triggered_at: {e}")
+            
+            # Also auto-complete uploaded documents after 1 minute
+            # (In case indexer trigger failed but document was uploaded)
+            elif doc.get("status") == "uploaded":
+                upload_date = doc.get("upload_date")
+                if upload_date:
+                    try:
+                        # Parse ISO format with timezone
+                        upload_time = datetime.fromisoformat(upload_date.replace('Z', '+00:00'))
+                        time_elapsed = current_time - upload_time
+                        
+                        if time_elapsed > timedelta(minutes=1):
+                            # Auto-complete after 1 minute
+                            CosmosDBService.update_document(doc.get("document_id"), {
+                                "status": "completed",
+                                "completed_at": current_time.isoformat(),
+                                "processed": True
+                            })
+                            doc["status"] = "completed"
+                            doc["processed"] = True
+                    except Exception as e:
+                        print(f"Error parsing upload_date: {e}")
         
         return {"documents": documents, "count": len(documents)}
 

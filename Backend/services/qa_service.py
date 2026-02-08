@@ -202,6 +202,7 @@ Please provide a clear answer based on the context above."""
                     api_version=AZURE_OPENAI_API_VERSION,
                     azure_endpoint=AZURE_OPENAI_ENDPOINT,
                     timeout=20.0,  # Reduced from 30 to 20 seconds
+                    max_retries=0,  # Disable automatic retries, we'll handle manually
                 )
                 
                 # Retry logic for rate limits
@@ -255,12 +256,12 @@ Please provide a clear answer based on the context above."""
                         # Re-raise other exceptions
                         raise
             else:
-                client = OpenAI(api_key=OPENAI_API_KEY)
+                client = OpenAI(api_key=OPENAI_API_KEY, max_retries=0)
                 response = client.chat.completions.create(
                     model="gpt-4",
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
+                        {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
                     ],
                     temperature=0.3,
                     max_tokens=500,
