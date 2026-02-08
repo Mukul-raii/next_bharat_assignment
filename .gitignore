@@ -1,0 +1,14 @@
+__pycache__/
+# General
+.env
+.DS_Store
+.vscode/
+# Frontend specific
+Frontend/node_modules/
+Frontend/dist/
+Frontend/build/
+
+# Backend specific
+Backend/node_modules/
+Backend/dist/
+Backend/logs/
