@@ -256,7 +256,11 @@ Please provide a clear answer based on the context above."""
                         # Re-raise other exceptions
                         raise
             else:
-                client = OpenAI(api_key=OPENAI_API_KEY, max_retries=0)
+                client = OpenAI(
+                    api_key=OPENAI_API_KEY,
+                    timeout=20.0,
+                    max_retries=0
+                )
                 response = client.chat.completions.create(
                     model="gpt-4",
                     messages=[
