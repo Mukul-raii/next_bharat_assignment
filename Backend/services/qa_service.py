@@ -206,20 +206,23 @@ Please provide a clear answer based on the context above."""
                 )
                 
                 # Retry logic for rate limits
-                max_retries = 1  # Reduced from 2 to 1 for faster failure
-                retry_delay = 3  # Reduced from 5 to 3 seconds
+                max_retries = 2  # Allow 2 retries for better reliability
+                retry_delay = 5  # Wait 5 seconds between retries
                 
                 for attempt in range(max_retries):
                     try:
                         logger.info(f"🚀 Calling Azure OpenAI API (attempt {attempt + 1}/{max_retries})")
-                        logger.info(f"   Model: {AZURE_OPENAI_DEPLOYMENT_NAME}, Max tokens: 800")
+                        logger.info(f"   Model: {AZURE_OPENAI_DEPLOYMENT_NAME}")
                         
-                        # For o-series models (like gpt-5-mini), use only user message
-                        # Using 800 tokens to reduce quota usage (reasoning models use tokens internally)
+                        # Optimized parameters for document Q&A
                         response = client.chat.completions.create(
                             model=AZURE_OPENAI_DEPLOYMENT_NAME,
                             messages=[{"role": "user", "content": combined_prompt}],
-                            max_completion_tokens=800,
+                            temperature=0.3,  # Low temperature for factual, consistent answers
+                            max_tokens=1200,  # Sufficient for detailed responses
+                            top_p=0.95,  # High-quality token selection
+                            frequency_penalty=0.3,  # Reduce repetition
+                            presence_penalty=0.1,  # Encourage focused answers
                         )
                         
                         logger.info(f"✅ Received response from OpenAI")
