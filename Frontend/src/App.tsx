@@ -7,15 +7,24 @@ import type { Document } from "./types";
 
 function App() {
   const { documents, loading, refetch } = useDocuments();
-  const [selectedDocument, setSelectedDocument] =
-    React.useState<Document | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = React.useState<
+    string | null
+  >(null);
+
+  // Get the latest version of selected document from documents array
+  const selectedDocument = React.useMemo(() => {
+    if (!selectedDocumentId) return null;
+    return (
+      documents.find((doc) => doc.document_id === selectedDocumentId) || null
+    );
+  }, [selectedDocumentId, documents]);
 
   const handleUploadSuccess = () => {
     refetch();
   };
 
   const handleSelectDocument = (doc: Document) => {
-    setSelectedDocument(doc);
+    setSelectedDocumentId(doc.document_id);
   };
 
   return (
@@ -40,7 +49,7 @@ function App() {
             documents={documents}
             loading={loading}
             onSelectDocument={handleSelectDocument}
-            selectedDocumentId={selectedDocument?.id}
+            selectedDocumentId={selectedDocumentId || undefined}
             onRefresh={refetch}
           />
         </div>
