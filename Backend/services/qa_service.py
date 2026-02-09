@@ -19,6 +19,24 @@ from openai import AzureOpenAI, OpenAI, RateLimitError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import embedding service (graceful fallback if not available)
+try:
+    from services.embedding_service import generate_query_embedding
+    VECTOR_SEARCH_AVAILABLE = True
+    logger.info("✅ Vector search enabled - embedding service available")
+except ImportError:
+    VECTOR_SEARCH_AVAILABLE = False
+    logger.warning("⚠️ Vector search disabled - embedding service not available")
+
+# Try to import embedding service (graceful fallback if not available)
+try:
+    from services.embedding_service import generate_query_embedding
+    VECTOR_SEARCH_AVAILABLE = True
+    logger.info("✅ Vector search enabled - embedding service available")
+except ImportError:
+    VECTOR_SEARCH_AVAILABLE = False
+    logger.warning("⚠️ Vector search disabled - embedding service not available")
+
 
 class QAService:
     """Service for Question & Answer using Azure AI Search and OpenAI"""
@@ -57,6 +75,30 @@ class QAService:
             "highlight": "content,merged_content",
             "count": True,
         }
+        
+        # Try to add vector search if available
+        search_type = "text_only"
+        if VECTOR_SEARCH_AVAILABLE:
+            try:
+                logger.info("🔮 Attempting hybrid search (text + vector)...")
+                query_vector = generate_query_embedding(query)
+                
+                # Add vector query for hybrid search
+                payload["vectorQueries"] = [{
+                    "vector": query_vector,
+                    "fields": "content_vector",
+                    "k": top,
+                    "kind": "vector"
+                }]
+                
+                search_type = "hybrid_vector"
+                logger.info("✅ Hybrid search enabled (BM25 + vector similarity)")
+                
+            except Exception as e:
+                logger.warning(f"⚠️ Vector search failed, falling back to text-only: {str(e)[:100]}")
+                search_type = "text_only_fallback"
+        else:
+            logger.info("📝 Using text-only search (vector search not configured)")
 
         # Note: Azure Blob indexer doesn't have a direct document_id field
         # So we'll search all documents and filter results after retrieval
@@ -129,10 +171,14 @@ class QAService:
                                         "@search.score": 1.0,
                                     })
 
-                logger.info(f"✅ Search completed: Found {len(processed_results)} relevant chunks")
+                logger.info(f"✅ Search completed ({search_type}): Found {len(processed_results)} relevant chunks")
                 for i, result in enumerate(processed_results[:2], 1):  # Log first 2 results
                     content_preview = result.get("content", "")[:150]
                     logger.info(f"  Result {i}: Score={result.get('@search.score', 0):.2f}, DocID={result.get('document_id')}, Content={content_preview}...")
+
+                # Add search type metadata to results
+                for result in processed_results:
+                    result["_search_type"] = search_type
 
                 return processed_results
             else:
@@ -358,11 +404,15 @@ Please provide a clear answer based on the context above."""
                     "answer": "No relevant information found in the uploaded documents.",
                     "citations": [],
                     "confidence": "none",
+                    "search_type": "none",
                     "status": "success",
                 }
 
             # Step 2: Generate answer with GPT
             result = QAService.generate_answer(question, search_results)
+
+            # Extract search type from first result (all results have same search type)
+            search_type = search_results[0].get("_search_type", "text_only") if search_results else "none"
 
             return {
                 "question": question,
@@ -370,6 +420,7 @@ Please provide a clear answer based on the context above."""
                 "citations": result["citations"],
                 "confidence": result["confidence"],
                 "chunks_found": len(search_results),
+                "search_type": search_type,  # 'text_only', 'hybrid_vector', 'text_only_fallback', or 'none'
                 "status": "success",
             }
 
