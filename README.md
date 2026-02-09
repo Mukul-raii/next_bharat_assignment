@@ -205,7 +205,7 @@ next_bharat_assignment/
 
 ### Architecture Diagram
 
-![Architecture](docs/image2.png)
+![Architecture](docs/image3.png)
 
 ## 🔧 Development
 
