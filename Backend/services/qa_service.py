@@ -111,6 +111,23 @@ class QAService:
                         r for r in processed_results if r["document_id"] == document_id
                     ]
                     logger.info(f"📄 Filtered by document_id: {before_filter} → {len(processed_results)} results")
+                    
+                    # If no results, try wildcard search for this document
+                    if len(processed_results) == 0:
+                        logger.info("⚠️ No results found, trying wildcard search")
+                        payload["search"] = "*"
+                        payload["top"] = 20
+                        resp2 = requests.post(url, headers=headers, json=payload)
+                        if resp2.status_code == 200:
+                            for doc in resp2.json().get("value", []):
+                                path = doc.get("metadata_storage_path", "")
+                                if document_id in base64.b64decode(path + "=" * (4 - len(path) % 4)).decode("utf-8", errors="ignore"):
+                                    processed_results.append({
+                                        "document_id": document_id,
+                                        "content": doc.get("merged_content") or doc.get("content", ""),
+                                        "text": doc.get("merged_content") or doc.get("content", ""),
+                                        "@search.score": 1.0,
+                                    })
 
                 logger.info(f"✅ Search completed: Found {len(processed_results)} relevant chunks")
                 for i, result in enumerate(processed_results[:2], 1):  # Log first 2 results
