@@ -1,13 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Document } from "../types";
 import { useChat } from "../hooks/useChat";
 import { ChatController } from "../controllers/ChatController";
+import FileUpload from "./FileUpload";
 
 interface ChatInterfaceProps {
-  document: Document;
+  document: Document | null;
+  onUploadSuccess?: (documentId?: string) => void;
+  onRequestOpenDocuments?: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  document,
+  onUploadSuccess,
+  onRequestOpenDocuments,
+}) => {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, loading, sendMessage, clearChat, historyLoaded } =
@@ -22,7 +31,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !document) return;
 
     if (!document.processed) {
       alert("⏳ Please wait for the document to be processed first.");
@@ -38,7 +47,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
     try {
       await sendMessage(input);
       setInput("");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error sending message:", error);
     }
   };
@@ -60,14 +69,98 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
     }
   };
 
+  // Show empty state when no document is selected
+  if (!document) {
+    return (
+      <div className="flex h-full w-full flex-col">
+        <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Document Q&A
+            </h2>
+            <p className="text-xs text-slate-500">
+              AI-powered document intelligence
+            </p>
+          </div>
+          {onRequestOpenDocuments && (
+            <button
+              type="button"
+              onClick={onRequestOpenDocuments}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 lg:hidden"
+            >
+              📄 Documents
+            </button>
+          )}
+        </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 p-8">
+          <div className="w-full max-w-2xl text-center">
+            <div className="mb-8">
+              <div className="mb-4 text-6xl">📄</div>
+              <h2 className="mb-2 text-2xl font-semibold text-slate-900">
+                Welcome to Document Q&A
+              </h2>
+              <p className="text-slate-600">
+                Upload a document to start asking questions
+              </p>
+            </div>
+
+            <div className="mx-auto w-full max-w-xl">
+              <FileUpload
+                onUploadSuccess={(docId?: string) => {
+                  if (onUploadSuccess) {
+                    onUploadSuccess(docId);
+                  }
+                }}
+              />
+            </div>
+
+            <div className="mt-8 text-left">
+              <h3 className="mb-3 text-sm font-semibold text-slate-700">
+                ✨ What you can do:
+              </h3>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600">•</span>
+                  <span>Upload PDF, DOCX, PNG, or JPG files</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600">•</span>
+                  <span>Ask questions about your documents</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600">•</span>
+                  <span>Get AI-powered answers with citations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600">•</span>
+                  <span>Chat history is saved automatically</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-5 px-6 border-b border-gray-200 bg-white text-gray-900 flex justify-between items-center">
+    <div className="flex h-full w-full flex-col">
+      <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 py-5 text-gray-900">
         <div>
           <h3 className="m-0 text-xl font-medium">💬 Chat with Document</h3>
           <p className="mt-1.5 text-sm text-gray-500">{document.filename}</p>
         </div>
         <div className="flex items-center gap-2.5">
+          {onRequestOpenDocuments && (
+            <button
+              type="button"
+              onClick={onRequestOpenDocuments}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 lg:hidden"
+            >
+              📄 Docs
+            </button>
+          )}
           {!document.processed && (
             <span className="bg-gray-100 text-gray-500 py-1.5 px-3 rounded-sm text-xs font-medium uppercase tracking-wide">
               ⏳ Processing...
@@ -85,9 +178,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-6">
         {!historyLoaded ? (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="flex h-full items-center justify-center text-sm text-gray-400">
             <p>Loading chat history...</p>
           </div>
         ) : (
@@ -109,8 +202,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
                       : "bg-white border-gray-200"
                   }`}
                 >
-                  <div className="leading-relaxed break-words text-sm">
-                    {message.text}
+                  <div
+                    className={`leading-relaxed text-sm prose prose-sm max-w-none ${
+                      message.type === "user" ? "prose-invert" : "prose-slate"
+                    }`}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.text}
+                    </ReactMarkdown>
                   </div>
                   {message.citations && message.citations.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-200 text-sm">
@@ -143,24 +242,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
                               <div className="font-semibold text-gray-800 text-xs">
                                 📄 {locationStr}
                               </div>
-                              {citation.score !== undefined && (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[0.65rem] text-gray-500">
-                                    Similarity:
-                                  </span>
-                                  <span
-                                    className={`text-[0.65rem] font-semibold ${
-                                      citation.score > 0.8
-                                        ? "text-green-600"
-                                        : citation.score > 0.6
-                                        ? "text-blue-600"
-                                        : "text-gray-600"
-                                    }`}
-                                  >
-                                    {(citation.score * 100).toFixed(0)}%
-                                  </span>
-                                </div>
-                              )}
                             </div>
                             <div className="text-gray-600 text-xs leading-relaxed italic border-l-2 border-gray-300 pl-2">
                               "
@@ -172,10 +253,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
                           </div>
                         );
                       })}
-                      <div className="mt-2 text-[0.65rem] text-gray-400 italic">
-                        💡 Similarity score indicates how closely the source
-                        matches your question (higher is better)
-                      </div>
                     </div>
                   )}
                   <div
@@ -207,7 +284,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
         )}
       </div>
 
-      <div className="p-5 px-6 border-t border-gray-200 flex gap-2.5 bg-white">
+      <div className="flex shrink-0 gap-2.5 border-t border-gray-200 bg-white p-5 px-6">
         <input
           type="text"
           value={input}
@@ -217,12 +294,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ document }) => {
             document.processed ? "Ask a question..." : "Wait for processing..."
           }
           disabled={loading || !document.processed}
-          className="flex-1 p-3 px-4 border border-gray-300 rounded text-sm outline-none transition-colors duration-150 focus:border-gray-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+          className="flex-1 rounded border border-gray-300 p-3 px-4 text-sm outline-none transition-colors duration-150 focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
         />
         <button
           onClick={handleSend}
           disabled={loading || !input.trim() || !document.processed}
-          className="px-5 h-[42px] border-none rounded bg-gray-900 text-white text-sm cursor-pointer transition-all duration-150 flex-shrink-0 font-medium hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="h-[42px] shrink-0 cursor-pointer rounded border-none bg-gray-900 px-5 text-sm font-medium text-white transition-all duration-150 hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
         >
           {loading ? "⏳" : "📤"}
         </button>

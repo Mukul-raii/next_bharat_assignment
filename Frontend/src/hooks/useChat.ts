@@ -14,7 +14,7 @@ export function useChat(document: Document | null) {
       loadChatHistory(document.document_id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [document?.id]);
+  }, [document?.document_id]);
 
   const loadChatHistory = async (documentId: string) => {
     try {

@@ -57,42 +57,42 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white flex-1 overflow-hidden flex flex-col border-l border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+      <div className="flex h-full flex-col overflow-hidden bg-slate-50">
+        <div className="border-b border-slate-200 px-4 py-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-700">
             Documents
           </h2>
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-gray-500">Loading...</p>
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-sm text-slate-500">Loading documents...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white flex-1 overflow-hidden flex flex-col border-l border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+    <div className="flex h-full flex-col overflow-hidden bg-slate-50">
+      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-700">
           Documents
         </h2>
         {onRefresh && (
           <button
-            className="text-gray-400 hover:text-gray-600 transition-colors text-sm"
+            className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 transition hover:bg-white"
             onClick={onRefresh}
             disabled={loading}
             title="Refresh"
           >
-            ↻
+            Refresh
           </button>
         )}
       </div>
 
       {documents.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center px-6">
+        <div className="flex flex-1 items-center justify-center px-6">
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">No documents</p>
-            <p className="text-xs text-gray-400">Upload a document to begin</p>
+            <p className="mb-1 text-sm text-slate-600">No documents yet</p>
+            <p className="text-xs text-slate-400">Upload a file from chat</p>
           </div>
         </div>
       ) : (
@@ -100,22 +100,22 @@ const DocumentList: React.FC<DocumentListProps> = ({
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className={`px-6 py-4 cursor-pointer transition-colors border-b border-gray-100 hover:bg-gray-50 ${
-                selectedDocumentId === doc.id
-                  ? "bg-blue-50 border-l-2 border-l-blue-600"
-                  : "border-l-2 border-l-transparent"
+              className={`cursor-pointer border-b border-slate-200 px-4 py-3 transition-colors ${
+                selectedDocumentId === doc.document_id
+                  ? "bg-white"
+                  : "hover:bg-white/70"
               }`}
               onClick={() => onSelectDocument(doc)}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div
-                    className="text-sm font-medium text-gray-900 truncate mb-1"
+                    className="mb-1 truncate text-sm font-medium text-slate-900"
                     title={doc.filename}
                   >
                     {truncateFilename(doc.filename)}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
                     <span>
                       {DocumentController.formatFileSize(doc.file_size)}
                     </span>
@@ -123,7 +123,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     <span>{formatDate(doc.upload_date)}</span>
                   </div>
                 </div>
-                <div className="shrink-0">
+                <div className="shrink-0 pt-0.5">
                   {getStatusBadge(doc.status, doc.processed)}
                 </div>
               </div>

@@ -1,5 +1,4 @@
 import React from "react";
-import FileUpload from "./components/FileUpload";
 import DocumentList from "./components/DocumentList";
 import ChatInterface from "./components/ChatInterface";
 import { useDocuments } from "./hooks/useDocuments";
@@ -10,6 +9,8 @@ function App() {
   const [selectedDocumentId, setSelectedDocumentId] = React.useState<
     string | null
   >(null);
+  const [isDocumentsDrawerOpen, setIsDocumentsDrawerOpen] =
+    React.useState(false);
 
   // Get the latest version of selected document from documents array
   const selectedDocument = React.useMemo(() => {
@@ -19,57 +20,108 @@ function App() {
     );
   }, [selectedDocumentId, documents]);
 
-  const handleUploadSuccess = () => {
-    refetch();
+  const handleUploadSuccess = async (uploadedDocumentId?: string) => {
+    await refetch();
+    if (uploadedDocumentId) {
+      setSelectedDocumentId(uploadedDocumentId);
+    }
   };
 
   const handleSelectDocument = (doc: Document) => {
     setSelectedDocumentId(doc.document_id);
+    setIsDocumentsDrawerOpen(false);
+  };
+
+  const handleNewChat = () => {
+    setSelectedDocumentId(null);
+    setIsDocumentsDrawerOpen(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 ">
-        <div className="max-w-7xl  px-2 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900 uppercase tracking-wide">
-              Document Q&A
-            </h1>
-            <p className="mt-0.5 text-xs text-gray-500">
-              Upload documents and ask questions
-            </p>
+    <div className="min-h-screen bg-slate-100 ">
+      <div className="relative mx-auto flex h-screen w-full  overflow-hidden bg-white  md:rounded-2xl md:border md:border-slate-200">
+        <aside className="hidden w-[320px] border-r border-slate-200 bg-slate-50 lg:flex lg:flex-col">
+          <div className="flex h-[72px] items-center justify-between border-b border-slate-200 px-5">
+            <div>
+              <h1 className="text-base font-semibold text-slate-900">
+                Documents
+              </h1>
+              <p className="text-xs text-slate-500">
+                Choose a file to chat with
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleNewChat}
+              className="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-white"
+            >
+              + New Chat
+            </button>
           </div>
-        </div>
-      </header>
+          <div className="min-h-0 flex-1">
+            <DocumentList
+              documents={documents}
+              loading={loading}
+              onSelectDocument={handleSelectDocument}
+              selectedDocumentId={selectedDocumentId || undefined}
+              onRefresh={refetch}
+            />
+          </div>
+        </aside>
 
-      <div className="flex flex-col lg:flex-row mx-auto gap-[1px] p-0 h-auto lg:h-[calc(100vh-100px)] bg-gray-200">
-        <div className="flex-1 lg:flex-none lg:w-[350px] flex flex-col gap-[1px] bg-gray-200">
-          <FileUpload onUploadSuccess={handleUploadSuccess} />
-          <DocumentList
-            documents={documents}
-            loading={loading}
-            onSelectDocument={handleSelectDocument}
-            selectedDocumentId={selectedDocumentId || undefined}
-            onRefresh={refetch}
+        <div className="flex min-h-0 flex-1">
+          <ChatInterface
+            document={selectedDocument}
+            onUploadSuccess={handleUploadSuccess}
+            onRequestOpenDocuments={() => setIsDocumentsDrawerOpen(true)}
           />
         </div>
 
-        <div className="flex-1 bg-white overflow-hidden min-h-[500px] lg:min-h-0">
-          {selectedDocument ? (
-            <ChatInterface document={selectedDocument} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-10 text-gray-400">
-              <div className="text-4xl mb-3 text-gray-300">←</div>
-              <h2 className="text-lg font-medium text-gray-600 mb-1">
-                Select a document
-              </h2>
-              <p className="text-sm text-gray-400">
-                Upload a document first, then select it from the list to start
-                asking questions
-              </p>
-            </div>
-          )}
-        </div>
+        {isDocumentsDrawerOpen && (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden"
+              onClick={() => setIsDocumentsDrawerOpen(false)}
+              aria-label="Close documents panel"
+            />
+            <aside className="fixed left-0 top-0 z-40 flex h-full w-[85vw] max-w-[340px] flex-col border-r border-slate-200 bg-white shadow-xl lg:hidden">
+              <div className="flex h-[72px] items-center justify-between border-b border-slate-200 px-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Documents
+                  </h2>
+                  <p className="text-xs text-slate-500">Select document</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                    onClick={handleNewChat}
+                  >
+                    + New Chat
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                    onClick={() => setIsDocumentsDrawerOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1">
+                <DocumentList
+                  documents={documents}
+                  loading={loading}
+                  onSelectDocument={handleSelectDocument}
+                  selectedDocumentId={selectedDocumentId || undefined}
+                  onRefresh={refetch}
+                />
+              </div>
+            </aside>
+          </>
+        )}
       </div>
     </div>
   );
